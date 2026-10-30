@@ -37,6 +37,15 @@
 | mixed 80/20, **Redis killed at t+20 s** | 500/s | 568 | 1.5 | 3.8 | 19.8 | **0 %** | 0 |
 | rate limiter at real limits (300/min/user, one user, 50/s) | 50/s | — | — | — | — | 302 × 200, then 702 × 429 | — |
 
+**Docker Compose stack** (same laptop; Docker Desktop VM with 4 GB RAM; API container limited to `cpus: 1.0`; MongoDB single-node replica set; requests sent straight to the API on :4000; Prometheus and Grafana scraping):
+
+| Scenario | Target | Achieved | p50 | p95 | p99 | Errors | Dropped iterations |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| smoke | 1 VU | — | — | — | — | 24/24 checks, 0 failed | 0 |
+| mixed 80/20, 3 min | 300/s | 329 | 2.6 ms | 528 ms | 1,044 ms | 0 % | 368 |
+
+Inside the VM the 1-CPU API saturated well below the native result. Prometheus showed event-loop p99 lag up to ~60 ms and in-flight spikes of ~50. The `ReadLatencyP95High`/`P99High` alerts went *pending*, as they should. CPU starvation also delayed Redis replies past the 150 ms budget: 440 `cache_operations_total{result="error"}` and a pending `RedisDegraded` alert, served by the MongoDB fallback with 0 failed requests. This is the designed degradation, and it is a reminder that Redis timeouts should be tuned together with CPU headroom.
+
 ("Achieved" includes the small number of setup login requests. Dropped iterations are arrivals k6 could not start because VUs were busy, which is the open-model signal of saturation.)
 
 **What the numbers say**

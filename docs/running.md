@@ -139,8 +139,23 @@ MONGO_PORT=27018 REDIS_PORT=6380 docker compose up --build -d
 
 ```bash
 docker compose --profile monitoring up -d
-# Prometheus http://localhost:9090   Grafana http://localhost:3000 (dashboard "Task API")
+# Prometheus http://localhost:9090   Grafana http://localhost:3000 (dashboard "Task API", no login)
 ```
+
+If port 3000 or 9090 is taken, set `GRAFANA_PORT=3001` / `PROMETHEUS_PORT=9091` in `.env` (Compose reads it).
+
+**Load test the Docker stack and watch it in Grafana:**
+
+1. Raise the rate limits in `.env`. The defaults correctly reject generated traffic, so set `RATE_LIMIT_MAX=10000000`, `AUTH_RATE_LIMIT_MAX=100000`, `LOGIN_ACCOUNT_RATE_LIMIT_MAX=100000` and `SEARCH_RATE_LIMIT_MAX=10000000`. Then recreate the API with `docker compose up -d api`. **Revert these values afterwards**, because they disable abuse protection.
+2. Seed the load-test accounts and run the load:
+   ```bash
+   docker compose run --rm api node dist/seed.js --loadtest 200
+   k6 run -e BASE_URL=http://127.0.0.1:4000 -e SCENARIO=smoke scripts/load-test.js
+   k6 run -e BASE_URL=http://127.0.0.1:4000 -e SCENARIO=mixed -e RATE=300 -e DURATION=3m scripts/load-test.js
+   ```
+3. Open Grafana → Dashboards → Task Manager → **Task API**. Panels fill within about 30 s. Prometheus → Status → Targets should show `task-api` UP, and Alerts shows the rules (latency alerts going *pending* under load is expected).
+
+The Compose API is limited to 1 CPU, so keep `RATE` around 200–500. The measured result is in [scalability.md](scalability.md#2-measured-results-local).
 
 **Logs, stop, reset:**
 

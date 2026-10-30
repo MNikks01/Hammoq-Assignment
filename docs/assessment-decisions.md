@@ -80,7 +80,7 @@
 
 **How I would verify it.** Integration tests: issue two sessions, change the password on one, and assert the other session's still-valid access token gets 401 within the cache TTL; repeat with Redis stopped (MongoDB fallback). Re-run the k6 `read` and `mixed` scenarios and compare p95/p99 and throughput with the numbers in `docs/scalability.md`; the acceptance criterion is < 5 % throughput regression. Add a `auth_revocation_checks_total{source=lru|redis|mongo}` metric to confirm the cache hit ratio under load.
 
-Other limitations (offset pagination, word-based search, undated tasks sorting first, no email flows, images and CI not executed here) are listed in the README.
+Other limitations (offset pagination, word-based search, undated tasks sorting first, no email flows) are listed in the README.
 
 ## Verification summary
 
@@ -97,8 +97,8 @@ Commands run at submission on macOS (Apple M2, Node 24, MongoDB 8.3, Redis 8):
 | `npm audit --omit=dev` | 0 vulnerabilities (after upgrading zod 3 → 4 and react-router 6 → 7) |
 | `k6 … SCENARIO=smoke` | 24/24 checks, 0 failed requests |
 | k6 load scenarios | see `docs/scalability.md` §2 (single instance; 10k RPS **not** demonstrated) |
-| Docker image builds, `docker compose up` | **not run** (no Docker daemon available); `docker compose config` validates |
-| GitHub Actions workflow | written, not executed (no remote repository) |
+| Docker image builds, `docker compose --profile monitoring up` | pass: all 6 services healthy, seeded, load-tested (`docs/scalability.md` §2); Prometheus scrapes the API; Grafana dashboard populated |
+| GitHub Actions CI (github.com/MNikks01/Hammoq-Assignment) | green: lint/types/unit/build/audit, integration, Playwright E2E, Docker image builds |
 
 ## D. Video script (≈ 4–5 minutes)
 

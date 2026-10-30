@@ -2,8 +2,8 @@
 
 A full-stack task manager built in TypeScript end to end: **React + Vite** frontend, **Express 5** API, **MongoDB** as the source of truth, and **Redis** for distributed rate limiting and a carefully scoped cache. Built for a MERN hiring assessment, with security, observability and capacity planning treated as first-class requirements.
 
-> **What has been verified:** 107 automated tests pass (unit, integration against real MongoDB/Redis, Playwright end-to-end incl. axe accessibility checks); lint, strict type-checking and production builds pass; `npm audit --omit=dev` reports 0 vulnerabilities; k6 load tests were run locally (results and caveats in [docs/scalability.md](docs/scalability.md)).
-> **What has not:** the 10,000 RPS target was **not** demonstrated — it needs multi-instance infrastructure that a single 8 GB laptop cannot provide. Docker images were written but could not be built here (no Docker daemon); CI builds them.
+> **What has been verified:** 107 automated tests pass (unit, integration against real MongoDB/Redis, Playwright end-to-end incl. axe accessibility checks); lint, strict type-checking and production builds pass; `npm audit --omit=dev` reports 0 vulnerabilities; GitHub Actions CI is green (checks, integration, E2E, Docker image builds); the full Docker Compose stack (web, API, MongoDB replica set, Redis, Prometheus, Grafana) was built, seeded and load-tested locally; k6 results and caveats are in [docs/scalability.md](docs/scalability.md).
+> **What has not:** the 10,000 RPS target was **not** demonstrated — it needs multi-instance infrastructure that a single 8 GB laptop cannot provide.
 
 ---
 
@@ -105,7 +105,7 @@ cp .env.example .env        # then set ACCESS_TOKEN_SECRET and COOKIE_SECRET (se
 docker compose up --build -d
 docker compose run --rm api node dist/seed.js
 open http://localhost:8080   # nginx serves the SPA and proxies /api to the API
-docker compose --profile monitoring up -d   # optional: Prometheus :9090, Grafana :3000
+docker compose --profile monitoring up -d   # optional: Prometheus :9090, Grafana :3000 (GRAFANA_PORT / PROMETHEUS_PORT to change)
 ```
 
 Compose runs MongoDB as a single-node **replica set** with a persistent volume, Redis with AOF persistence, health-checked startup ordering, and publishes MongoDB, Redis and the API on `127.0.0.1` only. If ports 27017/6379 are already in use, set `MONGO_PORT` / `REDIS_PORT`.
@@ -235,7 +235,6 @@ The target layout is the SPA on object storage + CDN, `/api/*` routed by a manag
 - **Offset pagination.** Deep pages cost O(offset); every list also runs a `countDocuments`. Cursor pagination is the documented next step.
 - **Search is word-based.** The MongoDB text index matches stemmed words, not substrings or typos.
 - **Undated tasks sort first** under "Due date" ascending (MongoDB orders `null` before dates).
-- Docker images and the CI workflow were written but not executed in this environment.
 
 ## Assessment decisions
 
