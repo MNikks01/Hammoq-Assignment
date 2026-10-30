@@ -10,3 +10,4 @@ blob-report/
 *.log
 .DS_Store
 load-results/
+.impeccable/
