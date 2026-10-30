@@ -1,0 +1,50 @@
+{
+  "name": "task-manager",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Production-oriented task manager: React + Express + MongoDB, TypeScript end to end",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev:api": "npm run dev -w @taskmanager/api",
+    "dev:web": "npm run dev -w @taskmanager/web",
+    "build": "npm run build -w @taskmanager/api && npm run build -w @taskmanager/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "npm run test -w @taskmanager/contracts && npm run test:unit -w @taskmanager/api && npm run test -w @taskmanager/web",
+    "test:integration": "npm run test:integration -w @taskmanager/api",
+    "test:e2e": "npm run test:e2e -w @taskmanager/web",
+    "seed": "npm run seed -w @taskmanager/api --",
+    "db:indexes": "npm run db:indexes -w @taskmanager/api --",
+    "load:smoke": "k6 run -e SCENARIO=smoke scripts/load-test.js",
+    "db:explain": "npm run db:explain -w @taskmanager/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.18.2"
+  },
+  "allowScripts": {
+    "argon2@0.41.1": true,
+    "esbuild@0.27.7": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.21.5": true,
+    "esbuild@0.25.12": true
+  },
+  "overrides": {
+    "vite": "^6.4.5"
+  }
+}

@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: task-manager
+    folder: Task Manager
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

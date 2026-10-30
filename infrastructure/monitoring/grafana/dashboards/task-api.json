@@ -1,0 +1,91 @@
+{
+  "title": "Task API",
+  "uid": "task-api",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Requests per second by status",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(http_request_duration_seconds_count[1m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p50 / p95 / p99 (s)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(http_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 latency by route (s)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Event loop lag p99 (s) and in-flight requests",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        { "expr": "nodejs_eventloop_lag_p99_seconds", "legendFormat": "lag p99 {{instance}}" },
+        { "expr": "http_requests_in_flight", "legendFormat": "in-flight {{instance}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "MongoDB: pool checked out, command p95 (s)",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        { "expr": "mongodb_pool_connections_checked_out", "legendFormat": "checked out {{instance}}" },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, command) (rate(mongodb_command_duration_seconds_bucket[1m])))",
+          "legendFormat": "p95 {{command}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cache, rate limits, load shedding (ops/s)",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (result) (rate(cache_operations_total[1m]))", "legendFormat": "cache {{result}}" },
+        {
+          "expr": "sum by (limiter) (rate(rate_limit_rejections_total[1m]))",
+          "legendFormat": "429 {{limiter}}"
+        },
+        { "expr": "sum(rate(rate_limit_store_fallback_total[1m]))", "legendFormat": "rate-limit fallback" },
+        { "expr": "sum by (reason) (rate(http_load_shed_total[1m]))", "legendFormat": "shed {{reason}}" }
+      ]
+    }
+  ]
+}

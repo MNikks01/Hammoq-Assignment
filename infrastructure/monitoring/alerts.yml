@@ -1,0 +1,68 @@
+# Starting thresholds; tune against real traffic baselines. Runbooks: docs/deployment.md#runbooks
+groups:
+  - name: task-api
+    rules:
+      - alert: HighServerErrorRate
+        expr: sum(rate(http_request_duration_seconds_count{status=~"5.."}[5m])) / sum(rate(http_request_duration_seconds_count[5m])) > 0.01
+        for: 5m
+        labels: { severity: page }
+        annotations: { summary: 'More than 1% of API requests are failing with 5xx' }
+
+      - alert: ReadLatencyP95High
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{method="GET",route!~"/health.*"}[5m]))) > 0.2
+        for: 10m
+        labels: { severity: ticket }
+        annotations: { summary: 'p95 latency of GET endpoints above 200ms' }
+
+      - alert: ReadLatencyP99High
+        expr: histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{method="GET",route!~"/health.*"}[5m]))) > 0.5
+        for: 10m
+        labels: { severity: page }
+        annotations: { summary: 'p99 latency of GET endpoints above 500ms' }
+
+      - alert: MongoPoolCheckoutFailures
+        expr: sum(rate(mongodb_pool_checkout_failures_total[5m])) > 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          { summary: 'Requests are timing out waiting for a MongoDB connection (pool saturated or DB down)' }
+
+      - alert: ApiNotReady
+        expr: up{job="task-api"} == 0
+        for: 2m
+        labels: { severity: page }
+        annotations: { summary: 'API instance is not scrapeable' }
+
+      - alert: RedisDegraded
+        expr: sum(rate(rate_limit_store_fallback_total[5m])) > 0
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          { summary: 'Redis unavailable: rate limits are per-instance and the dashboard cache is bypassed' }
+
+      - alert: EventLoopSaturated
+        expr: max(nodejs_eventloop_lag_p99_seconds) > 0.1
+        for: 5m
+        labels: { severity: ticket }
+        annotations: { summary: 'Event loop p99 lag above 100ms: instance is CPU-saturated, scale out' }
+
+      - alert: HighMemory
+        expr: max(process_resident_memory_bytes) > 450 * 1024 * 1024
+        for: 10m
+        labels: { severity: ticket }
+        annotations: { summary: 'API resident memory above 450MiB (limit 512MiB)' }
+
+      - alert: LoadShedding
+        expr: sum(rate(http_load_shed_total[5m])) > 1
+        for: 5m
+        labels: { severity: ticket }
+        annotations: { summary: 'Instances are shedding load (in-flight cap or deadline reached)' }
+
+      - alert: RateLimitSpike
+        expr: sum(rate(rate_limit_rejections_total[5m])) by (limiter) > 5
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          {
+            summary: 'Sustained rate-limit rejections on {{ $labels.limiter }} (abuse or a misbehaving client)',
+          }
